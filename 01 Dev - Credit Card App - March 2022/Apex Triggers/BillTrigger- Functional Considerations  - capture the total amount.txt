@@ -1,0 +1,31 @@
+trigger BillTrigger on Bill__c (before insert, before update, before delete, after insert, after update, after delete, after undelete) {
+    if(Trigger.isBefore) {
+        if(Trigger.isInsert) {
+            //Calculate the Total Amount on the Bill
+			BillTriggerHandler.calculateTotalAmount(Trigger.new, false);
+        }
+        if(Trigger.isUpdate) {
+			//Calculate the Total Amount on the Bill
+			BillTriggerHandler.calculateTotalAmount(Trigger.new, false);
+        }
+        if(Trigger.isDelete) {
+            
+        }
+    }
+    if(Trigger.isAfter) {
+        if(Trigger.isInsert) {
+            //Creating an Audit of the Bill Amount on the Related Customers
+			BillTriggerHandler.auditBillAmtCustomer(Trigger.newMap, null); //in insert you dont really have an old or oldMap
+        }
+        if(Trigger.isUpdate) {
+			//Creating an Audit of the Bill Amount on the Related Customers
+			BillTriggerHandler.auditBillAmtCustomer(Trigger.newMap, Trigger.oldMap);
+        }
+        if(Trigger.isDelete) {
+            
+        }
+        if(Trigger.isUndelete) {
+            
+        }
+    }
+}

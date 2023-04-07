@@ -1,0 +1,107 @@
+@isTest
+private class BillTriggerTest {
+    private @testSetup static void createTestData() {
+        //Create a customer for Total Amount Calculation Testing
+//Follow front end / end user manual testing process,  create new records
+        Customer__c custRecord = new Customer__c();
+        custRecord.Name = 'Test Customer';
+        custRecord.Active_Customer__c = true;
+        custRecord.Annual_Revenue__c = 134324.12;
+        custRecord.Contact_No__c = '42134234';
+        custRecord.Email__c = 'test@email.com';
+        custRecord.Location__c = 'Japan';
+        INSERT custRecord;
+        
+        //Create a customer for Audit Bill Amount Test Testing (not required)
+        Customer__c custRecord2 = new Customer__c();
+        custRecord2.Name = 'Test Customer 2';
+        custRecord2.Active_Customer__c = true;
+        custRecord2.Annual_Revenue__c = 134324.12;
+        custRecord2.Contact_No__c = '42134234';
+        custRecord2.Email__c = 'test2@email.com';
+        custRecord2.Location__c = 'Japan';
+        INSERT custRecord2;
+        
+        //Create a credit card
+        Credit_Card__c card = new Credit_Card__c();
+        card.Name = 'Test Card';
+        card.One_Time_Cost__c = 123.3;
+        card.Monthly_Rental_Charge__c = 12.3;
+        card.Transaction_Charge__c = 0.5;
+        INSERT card;
+    }
+    
+    //Test total amount calculation
+    private @isTest static void testTotalAmtCalculation() {
+        //Get the Customer for testing 
+        Customer__c customer = new Customer__c();
+        customer = [SELECT ID FROM Customer__c WHERE Name = 'Test Customer'];
+        
+        //Get the Creadit Card for testing 
+        Credit_Card__c creditCard = new Credit_Card__c();
+        creditCard = [SELECT ID, Monthly_Rental_Charge__c FROM Credit_Card__c WHERE Name = 'Test Card'];
+        
+        //Create a bill
+        Bill__c bill = new Bill__c();
+        bill.Customer__c = customer.ID;
+        bill.Credit_Card__c = creditCard.ID;
+        bill.Cash_Withdrawal__c = 1000.00;
+        bill.Number_of_Transactions__c = 10;
+        INSERT bill; //Code Coverage Triggers here
+        
+        //Check the bill total amount on bill insert
+        bill = new Bill__c();
+        bill = [SELECT ID, Total_Amount__c FROM Bill__c 
+                	WHERE Customer__c = :customer.ID AND Credit_Card__c = :creditCard.ID LIMIT 1];
+        
+        System.assertEquals(1140.60, bill.Total_Amount__c);
+        
+        //Check the bill total amount on credit card update
+        creditCard.Monthly_Rental_Charge__c = creditCard.Monthly_Rental_Charge__c + 100;
+        UPDATE creditCard;
+        //Check the bill total amount on bill insert
+		bill = new Bill__c();
+        bill = [SELECT ID, Total_Amount__c FROM Bill__c 
+                	WHERE Customer__c = :customer.ID AND Credit_Card__c = :creditCard.ID LIMIT 1];
+
+		System.assertEquals(1240.60, bill.Total_Amount__c);        
+    }
+    
+    //Test Audit Bill Amount Functionality
+    private @isTest static void testAuditBillFeature() {
+        //Get the Customer for testing 
+        Customer__c customer = new Customer__c();
+        customer = [SELECT ID FROM Customer__c WHERE Name = 'Test Customer 2'];
+        
+        //Get the Creadit Card for testing 
+        Credit_Card__c creditCard = new Credit_Card__c();
+        creditCard = [SELECT ID FROM Credit_Card__c WHERE Name = 'Test Card'];
+        
+        //Create a bill
+        Bill__c bill = new Bill__c();
+        bill.Customer__c = customer.ID;
+        bill.Credit_Card__c = creditCard.ID;
+        bill.Cash_Withdrawal__c = 1000.00;
+        bill.Number_of_Transactions__c = 100;
+        INSERT bill; //Code Coverage Triggers here
+        
+        //Check the audit on bill insert
+        Audit_Customer_Bill__c audit = new Audit_Customer_Bill__c();
+        audit = [SELECT ID, Old_Bill_Amount__c, New_Bill_Amount__c FROM Audit_Customer_Bill__c
+                	WHERE Customer__c = :customer.ID LIMIT 1];
+        
+        System.assertEquals(0.00, audit.Old_Bill_Amount__c);
+        System.assertEquals(1185.60, audit.New_Bill_Amount__c);
+        
+        //Update the Bill
+		bill.Cash_Withdrawal__c = 2000.00;
+        UPDATE bill;
+        //Check the audit on bill update
+        audit = new Audit_Customer_Bill__c();
+        Decimal oldValue = 0.00;
+        audit = [SELECT ID, Old_Bill_Amount__c, New_Bill_Amount__c FROM Audit_Customer_Bill__c
+                	WHERE Customer__c = :customer.ID AND Old_Bill_Amount__c != :oldValue LIMIT 1];
+        System.assertEquals(1185.60, audit.Old_Bill_Amount__c);
+        System.assertEquals(2185.60, audit.New_Bill_Amount__c);
+    }    
+}

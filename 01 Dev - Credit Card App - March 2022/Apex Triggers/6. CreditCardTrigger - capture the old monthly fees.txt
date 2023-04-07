@@ -1,0 +1,29 @@
+trigger CreditCardTrigger on Credit_Card__c (before insert, before update, before delete, after insert, after update, after delete, after undelete) {
+    if(Trigger.isBefore) {
+        if(Trigger.isInsert) {
+            
+        }
+        if(Trigger.isUpdate) {
+			//Creating an Audit of the Monthly Charges on CreditCards
+			CreditCardTriggerHandler.auditCreditCard(Trigger.newMap, Trigger.oldMap);
+        }
+        if(Trigger.isDelete) {
+            
+        }
+    }
+    if(Trigger.isAfter) {
+        if(Trigger.isInsert) {
+            
+        }
+        if(Trigger.isUpdate) {
+            //Re-Calculate all related Bill Amounts, if Credit Card Currency Fields get changed
+            CreditCardTriggerHandler.recalculateBillAmounts(Trigger.newMap, Trigger.oldMap);
+        }
+        if(Trigger.isDelete) {
+            
+        }
+        if(Trigger.isUndelete) {
+            
+        }
+    }
+}

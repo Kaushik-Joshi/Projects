@@ -1,0 +1,154 @@
+@isTest
+public class StandardPaginationSortingTest {
+   //Test calculation
+   private @isTest static void testCalculation() {
+        Product2__c P2 =new Product2__c();
+        P2.Level__c = 'Silver Level';
+        P2.Product_code__c= 'B004';
+        P2.Name= 'Hindi';
+        P2.Unit_Price__c=60.00;
+        Insert P2;
+        
+	Account accountRecord=new Account();
+        accountRecord.Name = 'Apex Account';
+        accountRecord.AccountNumber = 'ACC009';
+        accountRecord.Site = 'Japan';
+        INSERT accountRecord; 
+        
+        Reward_point_for_Admins__c R2=new Reward_point_for_Admins__c();
+        R2.Name = 'Silver Level';
+        R2.Value__c = 3;
+        Insert R2;
+       // get data for testing
+       Product2__c P3 =new Product2__c();
+       P3  = [SELECT ID, Family__c,Level__c,Product_code__c,Unit_Price__c  FROM Product2__c WHERE Name = 'Hindi'];
+       
+       Account A=new Account();
+  		A  = [SELECT ID, AccountNumber,ShippingAddress,BillingAddress  FROM Account WHERE Name = 'Apex Account'];
+
+
+        Contact S2 = new Contact();
+        S2.lastname = 'Test';
+        S2.AccountId = A.Id;
+        Insert S2;
+        S2 = new Contact(); 
+		S2  = [SELECT ID,FirstName,lastname,AccountId FROM Contact WHERE lastname ='Test'];
+            
+        Book_Order__c BO = new Book_Order__c();
+        BO.Account__c=A.Id;
+        Insert BO;
+        BO = new Book_Order__c();
+        BO  = [SELECT ID, Account__c,Account_Billing_Address__c,Account_Shipping_Address__c,Last_OLI_TotalPrice__c,Total_Order_line_items__c
+               FROM Book_Order__c WHERE Account__c = :A.Id];
+
+       
+       Reward_point_for_Admins__c R=new Reward_point_for_Admins__c();
+        R=[Select Value__c FROM Reward_point_for_Admins__c WHERE Name = 'Silver Level'];
+
+       
+	// create OLI
+	Order_Line_Item__c oliRecord = new Order_Line_Item__c();
+        oliRecord.Book_Order__c      =BO.Id;
+        oliRecord.Student__c         =S2.Id;
+        oliRecord.Product2_MDT__c    =P3.Id;
+        oliRecord.Quantity__c        = 5;
+        oliRecord.Shipping_Status__c = 'Shipped';
+        oliRecord.Name__c	     = 'Test5';
+	INSERT oliRecord;
+       	// create OLI
+	oliRecord = new Order_Line_Item__c();
+        oliRecord.Book_Order__c      =BO.Id;
+        oliRecord.Student__c         =S2.Id;
+        oliRecord.Product2_MDT__c    =P3.Id;
+        oliRecord.Quantity__c        = 5;
+        oliRecord.Shipping_Status__c = 'Shipped';
+        oliRecord.Name__c	     = 'Test5';
+	INSERT oliRecord;
+      	// create OLI
+	oliRecord = new Order_Line_Item__c();
+        oliRecord.Book_Order__c      =BO.Id;
+        oliRecord.Student__c         =S2.Id;
+        oliRecord.Product2_MDT__c    =P3.Id;
+        oliRecord.Quantity__c        = 5;
+        oliRecord.Shipping_Status__c = 'Shipped';
+        oliRecord.Name__c	     = 'Test5';
+	INSERT oliRecord;
+       	// create OLI
+	oliRecord = new Order_Line_Item__c();
+        oliRecord.Book_Order__c      =BO.Id;
+        oliRecord.Student__c         =S2.Id;
+        oliRecord.Product2_MDT__c    =P3.Id;
+        oliRecord.Quantity__c        = 5;
+        oliRecord.Shipping_Status__c = 'Shipped';
+        oliRecord.Name__c	     = 'Test5';
+	INSERT oliRecord;
+              
+   }         
+@isTest
+    static void CalculateActual_Time(){
+Order_Line_Item__c OLI =new Order_Line_Item__c();
+OLI.Book_Order__c = 'a015i00000HYk8QAAT'; 
+OLI.Product2_MDT__c='a005i000005QnTKAA0';
+OLI.Quantity__c = 40; 
+OLI.Date_Shipped__c=Date.parse('7/16/2019'); 
+OLI.Student__c ='0035i000008BuQOAA0';
+OLI.Shipping_Status__c	= 'Shipped';
+Insert OLI;
+    }
+@istest
+static void EscalatedTrigger(){
+Order_Line_Item__c OLI =new Order_Line_Item__c();
+OLI.Book_Order__c = 'a015i00000HYk8QAAT'; 
+OLI.Product2_MDT__c='a005i000005QnTKAA0';
+OLI.Quantity__c = 40; 
+OLI.Date_Shipped__c=Date.parse('7/15/2019'); 
+OLI.Student__c ='0035i000008BuQOAA0';
+OLI.Shipping_Status__c	= 'Shipped';
+Insert OLI;
+    }
+  @isTest(seeAllData=true)
+     static void m1()
+        {
+            StandardPaginationSorting t=new StandardPaginationSorting();
+            t.SearchText='Tim Barr';
+            t.doSearch();
+        }
+    @isTest(seeAllData=true)
+     static void m2()
+        {
+            StandardPaginationSorting t=new StandardPaginationSorting();
+            t.SearchText='Spanish';
+            t.doSearch();
+        }
+    @isTest(seeAllData=true)
+     static void m3()
+        {
+            StandardPaginationSorting t=new StandardPaginationSorting();
+            t.SearchText='7/15/2019';
+            t.doSearch();
+        }
+    @isTest(seeAllData=true)
+     static void m4()
+        {
+            StandardPaginationSorting t=new StandardPaginationSorting();
+            t.SearchText='Shipped';
+            t.doSearch();
+        }
+    @isTest(seeAllData=true)
+     static void PaginationClass()
+        {
+          StandardPaginationSorting p =new StandardPaginationSorting();
+          p.first();
+          p.Last();
+          p.previous(); 
+          p.next();
+          p.getnext();
+          p.getprev();
+          p.getorderLineList();
+          p.toggleSort();
+	  boolean test1 = p.hasNext;
+	  boolean test2 = p.hasPrevious;
+	  integer test3 = p.pageNumber;
+         
+        }   
+}

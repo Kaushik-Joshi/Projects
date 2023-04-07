@@ -1,0 +1,33 @@
+<apex:page sidebar="false" controller="MyBillsCtr">
+    <center>
+        <div style="color:yellow; font-size:25px; font-weight:bold; margin-top:5px; border: green 5px solid; padding: 5px; background-color: black;">
+            My Bills
+        </div>
+    </center>
+ <apex:outputPanel rendered="{!readMode}">
+ <div style="margin-top: 10px;"> <apex:form > <apex:pageBlock title="My Bills">
+             <apex:pageBlockSection title="Information"> 
+            <apex:inputField value="{!b.Enter_Your_Credit_card_number__c}"/>
+             </apex:pageBlockSection>  
+<center><apex:commandButton value="getBills" action="{!getBills}"/> </center>
+</apex:pageBlock> </apex:form> </div> </apex:outputPanel>
+       
+<apex:outputPanel rendered="{!readMode}">
+<apex:form > <apex:pageBlock >
+            <apex:pageBlockTable value="{!bills}" var="bill">
+                <apex:column value="{!bill.Month__c}"></apex:column>
+                <apex:column value="{!bill.Name}"></apex:column>
+                <apex:column value="{!bill.Start_Date__c}"></apex:column>
+                <apex:column value="{!bill.End_Date__c}"></apex:column>
+                <apex:column value="{!bill.Due_Date__c}"></apex:column>
+                <apex:column value="{!bill.Cash_Withdrawal__c}"></apex:column>
+                <apex:column value="{!bill.Amount_Swiped__c}"></apex:column>
+                <apex:column value="{!bill.Number_of_Transactions__c}"></apex:column>
+                <apex:column value="{!bill.Total_Amount__c}"></apex:column>
+                <apex:column value="{!bill.Payment_status__c}"></apex:column>
+                <apex:column value="{!bill.Customer__c}"></apex:column>
+                <apex:column value="{!bill.Credit_Card__c}"></apex:column>
+            </apex:pageBlockTable>
+
+             </apex:pageBlock> </apex:form> </apex:outputPanel>
+</apex:page>

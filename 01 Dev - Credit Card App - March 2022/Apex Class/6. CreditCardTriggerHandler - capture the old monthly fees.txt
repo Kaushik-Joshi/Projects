@@ -1,0 +1,36 @@
+public class CreditCardTriggerHandler {
+    	//Creating an Audit of the Monthly Charges on CreditCards
+         public static void auditCreditCard(Map<Id, Credit_Card__c> newCards, 
+                                Map<Id, Credit_Card__c> oldCards) {
+             for(Integer i=0; i<newCards.values().size(); i++) {
+                if(newCards.values()[i].Monthly_Rental_charge__c != oldCards.get(newCards.values()[i].Id).Monthly_Rental_charge__c) {
+                 if(oldCards != null){
+                     newCards.values()[i].Comments__c = 'old monthly fees was = $' + oldCards.get(newCards.values()[i].Id).Monthly_Rental_charge__c;}
+                 else {newCards.values()[i].Comments__c ='NA';}
+                }
+             }
+         }
+
+    //Re-Calculate all related Bill Amounts, if Credit Card Currency Fields get changed
+    public static void recalculateBillAmounts(Map<Id, Credit_Card__c> newCards, Map<Id, Credit_Card__c> oldCards) {
+        //Step 1 - Collect all the credit cards in a new Map which have their currency fields changed
+        Set<Id> changedCardsIds = new Set<Id>();
+        for(Integer i=0; i<newCards.values().size(); i++) {
+            if(newCards.values()[i].One_Time_Cost__c != oldCards.get(newCards.values()[i].Id).One_Time_Cost__c ||
+               newCards.values()[i].Transaction_Charge__c != oldCards.get(newCards.values()[i].Id).Transaction_Charge__c ||
+               newCards.values()[i].Monthly_Rental_Charge__c != oldCards.get(newCards.values()[i].Id).Monthly_Rental_Charge__c) {
+            	changedCardsIds.add(newCards.values()[i].Id);	    
+            }
+        }
+        
+        //Step 2 - Collect all the bills against the changed credit cards
+        List<Bill__c> billRecords = new List<Bill__c>();
+        billRecords = [SELECT ID, Name, Customer__c, Credit_Card__c, Start_Date__c, End_Date__c, 
+                       	Number_of_transactions__c, Cash_Withdrawal__c, Total_Amount__c , Amount_Swiped__c 
+                       FROM Bill__c WHERE Credit_Card__c IN :changedCardsIds];
+        
+        //Step 3 - Pass this for recalculation of amount to the BillTriggerHandler
+        BillTriggerHandler.calculateTotalAmount(billRecords, true);
+    }
+   
+    }

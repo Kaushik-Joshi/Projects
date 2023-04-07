@@ -1,0 +1,54 @@
+public class BillTriggerHandler {
+    //Calculate the Total Amount on the Bill
+    public static void calculateTotalAmount(List<Bill__c> billRecords, Boolean otherObjectUpdate) {
+        //Step 1 - Collect the credit card ids
+        Set<Id> creditCardIds = new Set<Id>();
+        for(Integer i=0; i<billRecords.size(); i++) {
+            creditCardIds.add(billRecords[i].Credit_Card__c);
+        }
+        
+        //Step 2 - Get the required fields from Credit Cards which are needed to perform amount calculation 
+        Map<Id, Credit_Card__c> creditCardMap = new Map<Id, Credit_Card__c>();
+        List<Credit_Card__c> creditCards = [SELECT Id, Transaction_Charge__c, One_Time_Cost__c, 
+                                            Monthly_Rental_Charge__c
+                                            FROM Credit_Card__c
+                                            WHERE Id in :creditCardIds];
+        for(Integer i=0; i<creditCards.size(); i++) {
+            creditCardMap.put(creditCards[i].Id, creditCards[i]);
+        }
+        
+        //Step 3 - Calculate the total amount of the bill and let it go to the database
+        for(Integer i=0; i<billRecords.size(); i++) {
+            billRecords[i].Total_Amount__c = billRecords[i].Cash_Withdrawal__c + 
+                creditCardMap.get(billRecords[i].Credit_Card__c).One_Time_Cost__c +
+                creditCardMap.get(billRecords[i].Credit_Card__c).Monthly_Rental_Charge__c + 
+                billRecords[i].Number_Of_Transactions__c * 
+                creditCardMap.get(billRecords[i].Credit_Card__c).Transaction_Charge__c+ billRecords[i].Amount_Swiped__c;
+        } 
+        
+        if(otherObjectUpdate) {
+            UPDATE billRecords; //This will call the before update and after update triggers of Bill Object
+        }
+    }
+    
+    //Creating an Audit of the Bill Amount on the Related Customers
+    public static void auditBillAmtCustomer(Map<Id, Bill__c> newBills, Map<Id, Bill__c> oldBills) {
+            List<Audit_Customer_Bill__c> auditBills = new List<Audit_Customer_Bill__c>();
+            //Step 1 - To first collect all the bills whose Total Amount got changed
+            for(Integer i=0; i<newBills.values().size(); i++) {
+                    Audit_Customer_Bill__c auditBill = new Audit_Customer_Bill__c();
+                    auditBill.Customer__c = newBills.values()[i].Customer__c;
+                    if(oldBills != null) {
+                      if(newBills.values()[i].Total_Amount__c != oldBills.get(newBills.values()[i].Id).Total_Amount__c) {
+                    auditBill.Old_Bill_Amount__c = oldBills.get(newBills.values()[i].Id).Total_Amount__c;} }
+                    else {auditBill.Old_Bill_Amount__c = 0;}
+                    auditBill.New_Bill_Amount__c = newBills.values()[i].Total_Amount__c;
+                    auditBill.Bill__c = newBills.values()[i].Id;
+                    auditBill.Credit_Card__c = newBills.values()[i].Credit_Card__c;
+                    auditBills.add(auditBill);
+               
+            }
+            //Step2 - Insert the Audit Bills
+            INSERT auditBills;
+    }
+}

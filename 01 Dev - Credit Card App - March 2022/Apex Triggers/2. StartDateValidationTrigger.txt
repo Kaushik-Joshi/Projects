@@ -1,0 +1,15 @@
+trigger StartDateValidationTrigger on Bill__c (before insert,before update) {
+for(Bill__c a : Trigger.new){
+  if(a.Start_Date__c.day() >1)
+a.adderror('Start Date should be first day of the month');
+    
+Integer numberOfDays = Date.daysInMonth(a.End_Date__c.year(), a.End_Date__c.month());
+Date lastDayOfMonth = Date.newInstance(a.End_Date__c.year(), a.End_Date__c.month(), numberOfDays);
+    
+if(a.End_Date__c <> lastDayOfMonth)
+a.adderror('End Date should be last day of the month');        
+   
+a.Due_Date_for_Bill__c = a.End_Date__c + 10;
+    
+}
+}

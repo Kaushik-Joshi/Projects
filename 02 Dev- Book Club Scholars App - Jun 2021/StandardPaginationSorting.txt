@@ -1,0 +1,130 @@
+public class StandardPaginationSorting {
+private integer totalRecs = 0;
+    private integer OffsetSize = 0;
+    private integer LimitSize= 2;
+    public String soql {get;set;}
+    public List <Order_Line_Item__c> List1 = New List <Order_Line_Item__c>();
+    public String soqlsort {get;set;}
+    public List <Order_Line_Item__c> List2 = New List <Order_Line_Item__c>();
+    public String a='Shipped';
+    public String b='0035i000008BuQOAA0';   
+    //standard__navItemPage
+    public Id b2 {get;set;} 
+     
+    
+    public StandardPaginationSorting(){
+        b2  = ApexPages.currentPage().getParameters().get('ContactId');
+    totalRecs=[Select count() from Order_Line_Item__c Where Shipping_Status__c  = :a AND Student__c= :b];
+    }
+
+                public List<Order_Line_Item__c> getorderLineList() {
+                    return con.getRecords();
+                }
+
+                public ApexPages.StandardSetController con {
+                    get {
+if(con == null) {
+    b2  = ApexPages.currentPage().getParameters().get('ContactId');
+    soql = 'SELECT Name, Book_Order__c, Product2_MDT__c, Quantity__c, Unit_price_2__c, Total_Price__c, Date_Shipped__c, Rewards_points__c FROM Order_Line_Item__c Where Shipping_Status__c  = :a AND Student__c= :b';
+
+List1 = Database.query(soql + ' order by ' + sortField + ' ' + sortDir ); 
+
+con = new ApexPages.StandardSetController(List1);
+
+con.setPageSize(2);
+                                                }
+                                                return con;
+        }
+        set;
+    }
+
+    public Boolean hasNext {
+        get {
+            return con.getHasNext();
+        }
+        set;
+    }
+
+    public Boolean hasPrevious {
+        get {
+            return con.getHasPrevious();
+        }
+        set;
+    }
+
+    public Integer pageNumber {
+        get {
+            return con.getPageNumber();
+        }
+        set;
+    }
+
+     public void first() {
+        con.first();
+    }
+
+    // returns the last page of records
+    public void last() {
+        con.last();
+    }
+
+    // returns the previous page of records
+    public void previous() {
+        con.previous();
+    }
+
+    // returns the next page of records
+    public void next() {
+        con.next();
+    }
+
+    // returns the PageReference of the original page, if known, or the home page.
+   
+    public boolean getprev()
+    {
+        
+        if(OffsetSize == 0){
+            
+            return true;
+        }
+        else {
+            
+            return false;
+        }
+    }
+    public boolean getnext()
+    {
+        if((OffsetSize + LimitSize) > totalRecs){
+            
+            return true;
+        }
+        else {
+            
+            return false;
+        }
+    }
+
+    
+    public void toggleSort() {
+        sortDir = sortDir.equals('desc') ? 'asc' : 'desc';
+       b2  = ApexPages.currentPage().getParameters().get('ContactId');
+        soqlsort = 'SELECT Name, Book_Order__c, Product2_MDT__c, Quantity__c, Unit_price_2__c, Total_Price__c, Date_Shipped__c, Rewards_points__c FROM Order_Line_Item__c Where Shipping_Status__c  = :a AND Student__c= :b';
+
+                               List2 = Database.query(soqlsort + ' order by ' + sortField + ' ' + sortDir ); 
+
+                                con = new ApexPages.StandardSetController(List2);
+
+                                con.setPageSize(2);
+
+    }
+
+    public String sortDir {
+                                get  { if (sortDir == null) {  sortDir = 'asc'; } return sortDir;}
+        set;
+    }
+
+    public String sortField {
+                                get  { if (sortField == null) {sortField = 'Name'; } return sortField;  }
+        set;
+    } 
+}

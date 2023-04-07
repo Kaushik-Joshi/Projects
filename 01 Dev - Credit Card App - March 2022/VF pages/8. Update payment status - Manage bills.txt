@@ -1,0 +1,73 @@
+<apex:page sidebar="false" controller="BillManagementCtr">
+    <center>
+        <div style="color:yellow; font-size:25px; font-weight:bold; margin-top:5px; border: green 5px solid; padding: 5px; background-color: black;">
+            Bill Management
+        </div>
+    </center>
+   
+    <apex:outputPanel rendered="{!readMode}">
+        <div style="margin-top:10px;">
+            <apex:form >
+                <apex:pageBlock title="Bills">
+                    <apex:pageBlockTable value="{!billWrapperList}" var="bill">
+                        <apex:column headerValue="Select">
+                            <apex:inputCheckbox value="{!bill.selectBox}"></apex:inputCheckbox>
+                        </apex:column>
+                        <apex:column value="{!bill.billRecord.Name}" headerValue="Generated Number"></apex:column>
+                        <apex:column value="{!bill.billRecord.Customer__c}"></apex:column>
+                        <apex:column value="{!bill.billRecord.Credit_Card__c}"></apex:column>
+                        <apex:column value="{!bill.billRecord.Start_Date__c}"></apex:column>
+                        <apex:column value="{!bill.billRecord.End_Date__c}"></apex:column>
+                        <apex:column value="{!bill.billRecord.Due_Date__c}"></apex:column>
+                        <apex:column value="{!bill.billRecord.Cash_Withdrawal__c}"></apex:column>
+                        <apex:column value="{!bill.billRecord.Amount_Swiped__c}"></apex:column>
+                        <apex:column value="{!bill.billRecord.Number_of_Transactions__c}"></apex:column>
+                        <apex:column value="{!bill.billRecord.Total_Amount__c}"></apex:column>
+                        <apex:column value="{!bill.billRecord.Payment_status__c}"></apex:column>
+                    </apex:pageBlockTable>
+                    <apex:pageBlockButtons >
+                        <apex:commandButton value="Edit" action="{!edit}"></apex:commandButton>
+                        <apex:commandButton value="Delete" action="{!deleteBills}"></apex:commandButton>
+                    </apex:pageBlockButtons>
+                </apex:pageBlock>
+            </apex:form>
+        </div>   
+    </apex:outputPanel>
+    
+    <apex:outputPanel rendered="{!editMode}">
+        <div style="margin-top:10px;">
+            <apex:form >
+                <apex:pageBlock title="Bills">
+                    <apex:pageBlockTable value="{!bills}" var="bill">
+                        <apex:column value="{!bill.Name}" headerValue="Generated Number"></apex:column>
+                        <apex:column value="{!bill.Customer__c}"></apex:column>
+                        <apex:column value="{!bill.Credit_Card__c}"></apex:column>
+                        <apex:column headerValue="Start Date">
+                            <apex:inputField value="{!bill.Start_Date__c}"></apex:inputField>
+                        </apex:column>
+                        <apex:column headerValue="End Date">
+                            <apex:inputField value="{!bill.End_Date__c}"></apex:inputField>
+                        </apex:column>
+                        <apex:column value="{!bill.Due_Date__c}"></apex:column>
+                        <apex:column headerValue="Cash Withdrawal">
+                            <apex:inputField value="{!bill.Cash_Withdrawal__c}"></apex:inputField>
+                        </apex:column>
+                        <apex:column headerValue="Amount Swiped">
+                            <apex:inputField value="{!bill.Amount_Swiped__c}"></apex:inputField>
+                        </apex:column>
+                        <apex:column headerValue="No. of Txns.">
+                            <apex:inputField value="{!bill.Number_of_Transactions__c}"></apex:inputField>
+                        </apex:column>
+                        <apex:column value="{!bill.Total_Amount__c}"></apex:column>
+                        <apex:column headerValue="Payment status">
+                            <apex:inputField value="{!bill.Payment_status__c}"></apex:inputField>
+                        </apex:column>
+                    </apex:pageBlockTable>
+                    <apex:pageBlockButtons >
+                        <apex:commandButton value="Save" action="{!saveBills}"></apex:commandButton>
+                    </apex:pageBlockButtons>
+                </apex:pageBlock>
+            </apex:form>
+        </div>   
+    </apex:outputPanel>
+</apex:page>

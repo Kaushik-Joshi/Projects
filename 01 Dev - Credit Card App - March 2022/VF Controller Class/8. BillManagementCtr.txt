@@ -1,0 +1,56 @@
+public class BillManagementCtr {
+
+    public List<BillWrapper> billWrapperList {get;set;} 
+    public List<Bill__c> bills {get;set;}
+    public Boolean readMode {get;set;}
+    public Boolean editMode {get;set;}
+    
+    public BillManagementCtr() {
+        bills = new List<Bill__c>();
+        
+        //Get all the bills when the page loads
+        getBills();
+        
+
+        read();
+    }
+    
+    public void getBills() {
+    	bills = [SELECT Id, Name, Start_Date__c, End_Date__c, Customer__c, Credit_Card__c, Number_Of_Transactions__c,
+                	Cash_Withdrawal__c, Total_Amount__c,Due_Date__c,Amount_Swiped__c,Payment_status__c  FROM Bill__c];
+        
+        billWrapperList = new List<BillWrapper>();
+        for(Integer i=0;i<bills.size();i++) {
+            BillWrapper billWrap = new BillWrapper(false, bills[i]);
+            billWrapperList.add(billWrap);
+        }
+    }
+    
+    public void read() {
+        readMode = true;
+        editMode = false;
+    }
+    
+    public void edit() {
+        readMode = false;
+        editMode = true;
+    }
+    
+    public void saveBills() {
+    	UPDATE bills; //before update and after update event of the bills!	
+        getBills();
+        read();
+    }
+    
+    public void deleteBills() {
+        List<Bill__c> billsToBeDeleted = new List<Bill__c>();
+        for(Integer i=0; i<billWrapperList.size(); i++) {
+            if(billWrapperList[i].selectBox) {
+                billsToBeDeleted.add(billWrapperList[i].billRecord);
+            }
+        }
+        DELETE billsToBeDeleted;
+        getBills();
+    }
+    
+}

@@ -1,0 +1,31 @@
+trigger RewardsPointsTrigger on Order_Line_Item__c (before insert, before update, before delete, 
+                                                    after insert, after update, after delete) {
+for(Order_Line_Item__c oli : Trigger.new){
+    System.debug(oli);//
+	if(Trigger.isBefore) {
+            System.debug('before trigger success');//
+            if(oli.Shipping_Status__c=='Shipped'){
+               System.debug('IF success');//
+                List<Reward_point_for_Admins__c> levelPointValue =new  List<Reward_point_for_Admins__c>();
+                levelPointValue = [Select Value__c from Reward_point_for_Admins__c  where name=:oli.Level_2__c];
+                System.debug(levelPointValue);//
+                System.debug(levelPointValue[0].value__c);//
+                oli.Rewards_Points__c = levelPointValue[0].value__c * oli.Quantity__c;
+                System.debug(oli.Rewards_Points__c);//
+		System.debug('Rewards_Points success');//
+			}
+    }   
+    if(Trigger.isAfter) {
+       System.debug('After trigger success');//
+	List<Contact> con =new  List<Contact>();
+        con=[Select Id,Total_Rewards_Points__c 	from Contact  where Id=:oli.Student__c];
+        System.debug(con);//
+        AggregateResult TRP =[SELECT SUM(Rewards_Points__c) from Order_Line_Item__c where Student__c=:oli.Student__c];
+        System.debug(TRP);//
+	con[0].Total_Rewards_Points__c =(Decimal)TRP.get('expr0'); 
+	System.debug(con[0].Total_Rewards_Points__c);//
+        Update con;
+        System.debug('Update con success TRP');//
+}
+}
+}

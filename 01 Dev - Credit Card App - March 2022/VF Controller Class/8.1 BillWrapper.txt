@@ -1,0 +1,10 @@
+public class BillWrapper {
+    public Boolean selectBox {get;set;}
+    public Bill__c billRecord {get;set;}
+    
+    public BillWrapper(Boolean selectBoxInput, Bill__c billRecordInput) {
+        this.billRecord = new Bill__c();
+        this.selectBox = selectBoxInput;
+        this.billRecord = billRecordInput;
+    }
+}

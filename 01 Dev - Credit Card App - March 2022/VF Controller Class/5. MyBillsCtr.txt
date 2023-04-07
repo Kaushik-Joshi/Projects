@@ -1,0 +1,33 @@
+public class MyBillsCtr {
+public Bill__c b { get; set; }
+public List<Bill__c> bills {get;set;}
+public Boolean readMode {get;set;}
+public Boolean editMode {get;set;}
+
+    
+    public MyBillsCtr() {
+        b=new Bill__c();
+        bills = new List<Bill__c>(); 
+        editView(); 
+        getBills();   
+        }
+        
+    public void editView() {
+      editMode = true;
+      readMode = false;      }
+    
+    public void readView() {    // internal
+        editMode = false;
+        readMode = true;   }
+  
+    public void getBills() {
+        readView();
+               
+        bills = [SELECT Id, Name, Start_Date__c, End_Date__c, Customer__c, Credit_Card__c, Number_Of_Transactions__c,
+                 Cash_Withdrawal__c, Total_Amount__c,Due_Date__c,Amount_Swiped__c,Payment_status__c, Month__c,Credit_card_number__c  
+                 FROM Bill__c 
+                 WHERE Credit_card_number__c  =:b.Enter_Your_Credit_card_number__c];
+        readView();
+
+    }
+}
