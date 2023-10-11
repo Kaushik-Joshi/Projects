@@ -1,0 +1,125 @@
+//Project3: There are 20 email ids for 20 Queues. Prevent Duplicate case. Assign the case to 1 of the 20 Queues based on priority from multiple email ids in To & cc
+
+//Solution: Email to case Replaced by 1 "Email Services" with "email address" (20 emails ids forwarded to this)
+1 Custom metadatatype
+
+public class CreateTaskEmailExample implements Messaging.InboundEmailHandler{
+    public class InboundEmailHandlerException extends Exception {}
+    public Messaging.InboundEmailResult handleInboundEmail(Messaging.InboundEmail email, Messaging.InboundEnvelope envelope) {
+        Messaging.InboundEmailResult result = new Messaging.InboundEmailresult();
+        String errorMessage = '';
+        MailBox__mdt SingleMail= null;
+        Case case1 = null;
+
+        try {
+            SingleMail= checkpriority(email, envelope);
+            case1 = email.inreplyto == null ? insertCase(email,SingleMail) : updateCase(email);
+            createFilesByEmailAttachments(email.binaryAttachments, case1.Id);
+            createEmailRecord(case1, email,SingleMail);
+            result.success = true;
+        } 
+        catch (Exception error) {
+            result.success = false;
+            result.message = error?.getMessage() + ' ' + error?.getStackTraceString();
+        }
+        return result;
+    }
+	//Option#1: check email priority method and decide if the case needs to be created; prevent duplicate case
+    private MailBox__mdt checkpriority(Messaging.InboundEmail email, Messaging.InboundEnvelope envelope) {
+        //get the delivered to email id which fires Email services (Note: Mesage Id is unique)
+		String s= envelope.fromAddress;
+		String deliveredTo = s.substring(0, s.indexOf('+')) + s.substring(s.indexOf('@'));
+        system.debug(deliveredTo);
+		// get list of To & CcAddress
+        List<String> recipientAddresses = new List<String>();
+        recipientAddresses.addAll(email.toAddresses);
+        if(email.ccAddresses!=null){recipientAddresses.addAll(email.ccAddresses);}
+        //get the priority email for which case needs to be created
+        List<MailBox__mdt> SingleMailList = [SELECT Id, Queue_Id__c, Priority__c, ReceiverEmail__c,Email_template__c,Email2__c 
+											 FROM MailBox__mdt 
+											 WHERE Email2__c IN:recipientAddresses 
+											 ORDER BY Priority__c LIMIT 1];
+		MailBox__mdt SingleMail=SingleMailList[0];
+        //Prevent Further Execution for lower priority triggering email id
+		if (deliveredTo!=SingleMail.Email2__c) {throw new InboundEmailHandlerException('deliveredToValue is not equal to Priority i.e. SingleMail.Email2__c');}
+        System.debug('Proceed'); 
+        return SingleMail;
+    }
+    // Create case for First Incoming Email
+	private Case insertCase(Messaging.InboundEmail email, MailBox__mdt SingleMail) {
+        Case case1 = new Case(
+            Subject = email.subject,
+            Description = email.plainTextBody,
+            Origin = 'Email',
+            Status = 'New', 
+            Priority = 'Low',
+            OwnerId = SingleMail.Queue_Id__c,
+            Message_Id__c = email.messageId, // Option #2 :make this unique field and prevent duplicate case at the cost of extra DMLs.
+            SuppliedEmail = email.fromAddress, 
+            SuppliedName = email.fromName,
+            RecordTypeId = SingleMail.Case_RecordTypeId__c,
+            Type = 'Enquiry'
+        );
+        List<Account> account = [Select id, PhoneNo., Email from Account where Email =:email.replyTo];
+        if(account.size() == 1){
+            case1.AccountId = account[0].id; 
+            List<Contact> contact = [Select id from Contact where AccountId =: account[0].id];
+            if(contact.size() == 1){case1.ContactId = contact[0].id;}
+        }
+        Insert case1;
+        Return case1;     
+    }
+    //Update case for Replied Incoming Email (Third)
+	private Case updateCase(Messaging.InboundEmail email){
+		//get threadIdentifier/messageIdentifier that can relate to the already existing Case
+        List<EmailMessage> emailMessage1 = [SELECT RelatedToId FROM EmailMessage 
+											WHERE MessageIdentifier = :email.inReplyTo LIMIT 1];
+        //get related already existing Case
+        List<Case> caseList = [SELECT Id, Message_Id__c, Subject, Description, OwnerId, CaseNumber FROM Case 
+                            WHERE Id =:emailMessage1[0].RelatedToId Limit 1];
+        Case case1 = caseList[0];
+		case1.Message_Id__c = email.messageId;
+        case1.Description += email.plainTextBody; // character limit 32000 , truncate may be required
+        Update case1;
+        Return case1;     
+    }
+	//Create attachments, check the Checkbox "Convert to binary" on "Email Service" defination
+    private void createFilesByEmailAttachments(List<Messaging.inboundEmail.BinaryAttachment> inboundAttachments, Id caseId) { 
+        if (inboundAttachments == null) {return;}
+        List<Attachment> lstAttachment = new List<Attachment>();
+        for (Messaging.inboundEmail.BinaryAttachment currentAttachment : inboundAttachments) {
+           Attachment attachment = new Attachment();
+           attachment.ParentId = caseId;
+           attachment.Name = currentAttachment.filename;
+           attachment.Body = currentAttachment.body;
+           lstAttachment.add(attachment);
+        }
+        Insert lstAttachment;
+    }
+	// Create Email and relate it to case if its a reply
+    private void createEmailRecord(Case case1, Messaging.InboundEmail email,MailBox__mdt SingleMail) {
+        EmailMessage emailMessage = new EmailMessage(
+            HtmlBody = 'To: '+String.join(email.toAddresses, ', '), //add to, cc for reference      
+            Headers = String.ValueOf(email.headers),
+            Subject = email.subject,
+            FromName = email.fromName,
+            FromAddress = email.fromAddress,
+            ToAddress = SingleMail.Email2__c,//custom MDT emailid @priority
+            Incoming = true,
+            Status = '0', 
+            IsClientManaged = true, 
+            MessageDate = DateTime.now() //header has date
+        );
+        if(case1.Id!=null){emailMessage.RelatedToId=case1.Id;}//relatedToId  is the Id of that object record (nonhuman objects such as accounts, opportunities, campaigns, cases, or custom objects.)
+        if (email.ccAddresses != null) {emailMessage.HtmlBody+='<br/>' +'cc: '+String.join(email.ccAddresses, ', ');}
+        emailMessage.HtmlBody+='<br/>' +email.htmlBody; //increase char limit 32000 to 1 lakh
+        //if email is a reply get threadIdentifier/messageIdentifier & add the same thread to email
+		if (email.inReplyTo != null){
+            List<EmailMessage> emailMessage2 = [SELECT RelatedToId FROM EmailMessage 
+												WHERE MessageIdentifier = :email.inReplyTo LIMIT 1];
+            emailMessage.MessageIdentifier = email.inReplyTo;
+            emailMessage.ThreadIdentifier = email.inReplyTo;
+            emailMessage.ReplyToEmailMessageId = emailMessage2[0].ReplyToEmailMessageId;} // 1st email
+        Insert emailMessage;        
+    }
+}
