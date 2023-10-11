@@ -1,4 +1,4 @@
-//Project3: There are 20 email ids for 20 Queues. Prevent Duplicate case. Assign the case to 1 of the 20 Queues based on priority from multiple email ids in To & cc
+//Project#3: There are 20 email ids for 20 Queues. Prevent Duplicate case. Assign the case to 1 of the 20 Queues based on priority from multiple email ids in To & cc
 
 //Solution: Email to case Replaced by 1 "Email Services" with "email address" (20 emails ids forwarded to this)
 1 Custom metadatatype
@@ -29,7 +29,6 @@ public class CreateTaskEmailExample implements Messaging.InboundEmailHandler{
         //get the delivered to email id which fires Email services (Note: Mesage Id is unique)
 		String s= envelope.fromAddress;
 		String deliveredTo = s.substring(0, s.indexOf('+')) + s.substring(s.indexOf('@'));
-        system.debug(deliveredTo);
 		// get list of To & CcAddress
         List<String> recipientAddresses = new List<String>();
         recipientAddresses.addAll(email.toAddresses);
@@ -39,14 +38,14 @@ public class CreateTaskEmailExample implements Messaging.InboundEmailHandler{
 											 FROM MailBox__mdt 
 											 WHERE Email2__c IN:recipientAddresses 
 											 ORDER BY Priority__c LIMIT 1];
-		MailBox__mdt SingleMail=SingleMailList[0];
+	MailBox__mdt SingleMail=SingleMailList[0];
         //Prevent Further Execution for lower priority triggering email id
-		if (deliveredTo!=SingleMail.Email2__c) {throw new InboundEmailHandlerException('deliveredToValue is not equal to Priority i.e. SingleMail.Email2__c');}
+	if (deliveredTo!=SingleMail.Email2__c) {throw new InboundEmailHandlerException('deliveredToValue is not equal to Priority i.e. SingleMail.Email2__c');}
         System.debug('Proceed'); 
         return SingleMail;
     }
     // Create case for First Incoming Email
-	private Case insertCase(Messaging.InboundEmail email, MailBox__mdt SingleMail) {
+    private Case insertCase(Messaging.InboundEmail email, MailBox__mdt SingleMail) {
         Case case1 = new Case(
             Subject = email.subject,
             Description = email.plainTextBody,
@@ -60,7 +59,8 @@ public class CreateTaskEmailExample implements Messaging.InboundEmailHandler{
             RecordTypeId = SingleMail.Case_RecordTypeId__c,
             Type = 'Enquiry'
         );
-        List<Account> account = [Select id, PhoneNo., Email from Account where Email =:email.replyTo];
+        //link Account and contact
+	List<Account> account = [Select id, PhoneNo., Email from Account where Email =:email.replyTo];
         if(account.size() == 1){
             case1.AccountId = account[0].id; 
             List<Contact> contact = [Select id from Contact where AccountId =: account[0].id];
@@ -71,14 +71,14 @@ public class CreateTaskEmailExample implements Messaging.InboundEmailHandler{
     }
     //Update case for Replied Incoming Email (Third)
 	private Case updateCase(Messaging.InboundEmail email){
-		//get threadIdentifier/messageIdentifier that can relate to the already existing Case
+	//get threadIdentifier/messageIdentifier that can relate to the already existing Case
         List<EmailMessage> emailMessage1 = [SELECT RelatedToId FROM EmailMessage 
-											WHERE MessageIdentifier = :email.inReplyTo LIMIT 1];
+					    WHERE MessageIdentifier = :email.inReplyTo LIMIT 1];
         //get related already existing Case
         List<Case> caseList = [SELECT Id, Message_Id__c, Subject, Description, OwnerId, CaseNumber FROM Case 
-                            WHERE Id =:emailMessage1[0].RelatedToId Limit 1];
+                               WHERE Id =:emailMessage1[0].RelatedToId Limit 1];
         Case case1 = caseList[0];
-		case1.Message_Id__c = email.messageId;
+	case1.Message_Id__c = email.messageId;
         case1.Description += email.plainTextBody; // character limit 32000 , truncate may be required
         Update case1;
         Return case1;     
@@ -96,7 +96,7 @@ public class CreateTaskEmailExample implements Messaging.InboundEmailHandler{
         }
         Insert lstAttachment;
     }
-	// Create Email and relate it to case if its a reply
+    // Create Email and relate it to case if its a reply
     private void createEmailRecord(Case case1, Messaging.InboundEmail email,MailBox__mdt SingleMail) {
         EmailMessage emailMessage = new EmailMessage(
             HtmlBody = 'To: '+String.join(email.toAddresses, ', '), //add to, cc for reference      
@@ -114,9 +114,9 @@ public class CreateTaskEmailExample implements Messaging.InboundEmailHandler{
         if (email.ccAddresses != null) {emailMessage.HtmlBody+='<br/>' +'cc: '+String.join(email.ccAddresses, ', ');}
         emailMessage.HtmlBody+='<br/>' +email.htmlBody; //increase char limit 32000 to 1 lakh
         //if email is a reply get threadIdentifier/messageIdentifier & add the same thread to email
-		if (email.inReplyTo != null){
+	if (email.inReplyTo != null){
             List<EmailMessage> emailMessage2 = [SELECT RelatedToId FROM EmailMessage 
-												WHERE MessageIdentifier = :email.inReplyTo LIMIT 1];
+						WHERE MessageIdentifier = :email.inReplyTo LIMIT 1];
             emailMessage.MessageIdentifier = email.inReplyTo;
             emailMessage.ThreadIdentifier = email.inReplyTo;
             emailMessage.ReplyToEmailMessageId = emailMessage2[0].ReplyToEmailMessageId;} // 1st email
